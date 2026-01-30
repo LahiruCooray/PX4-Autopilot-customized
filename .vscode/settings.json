@@ -129,4 +129,15 @@
         "yaml.schemas": {
                 "${workspaceFolder}/validation/module_schema.yaml": "${workspaceFolder}/src/modules/*/module.yaml"
         },
+        "ROS2.distro": "jazzy",
+        "python.autoComplete.extraPaths": [
+                "/home/lahiru/ros_ws_2/install/zumo_msgs/lib/python3.12/site-packages",
+                "/home/lahiru/ros2_ws/install/my_py_pkg/lib/python3.12/site-packages",
+                "/opt/ros/jazzy/lib/python3.12/site-packages"
+        ],
+        "python.analysis.extraPaths": [
+                "/home/lahiru/ros_ws_2/install/zumo_msgs/lib/python3.12/site-packages",
+                "/home/lahiru/ros2_ws/install/my_py_pkg/lib/python3.12/site-packages",
+                "/opt/ros/jazzy/lib/python3.12/site-packages"
+        ],
 }

@@ -394,6 +394,42 @@ ControlAllocator::Run()
 		_thrust_sp = matrix::Vector3f(vehicle_thrust_setpoint.xyz);
 	}
 
+	// 🔹Update stored residuals if new messages arrive (they come at [x] Hz, slower than 250 Hz control rate)
+	vehicle_torque_residual_s torque_resid{};
+	vehicle_thrust_residual_s thrust_resid{};
+
+	if (_torque_resid_sub.update(&torque_resid)) {
+		_last_torque_residual = matrix::Vector3f(torque_resid.xyz);  // Store last received residual
+		_last_torque_residual_time = now;  // Update timestamp
+		do_update = true;  // Trigger allocation update when residuals received
+	}
+
+	if (_thrust_resid_sub.update(&thrust_resid)) {
+		_last_thrust_residual = matrix::Vector3f(thrust_resid.xyz);  // Store last received residual
+		_last_thrust_residual_time = now;  // Update timestamp
+		do_update = true;  // Trigger allocation update when residuals received
+	}
+
+	// Safety: Reset residuals to zero if no messages received within timeout (200ms)
+	constexpr hrt_abstime RESIDUAL_TIMEOUT = 200_ms;
+	if (_last_torque_residual_time > 0 && (now - _last_torque_residual_time) > RESIDUAL_TIMEOUT) {
+		if (!_last_torque_residual.isAllZero()) {
+			_last_torque_residual.zero();
+			do_update = true;
+		}
+	}
+	if (_last_thrust_residual_time > 0 && (now - _last_thrust_residual_time) > RESIDUAL_TIMEOUT) {
+		if (!_last_thrust_residual.isAllZero()) {
+			_last_thrust_residual.zero();
+			do_update = true;
+		}
+	}
+
+	// Apply stored residuals to baseline setpoints every cycle (baseline is 250 Hz, residuals are <250 Hz)
+	_torque_sp += _last_torque_residual;
+	_thrust_sp += _last_thrust_residual;
+	// 🔹End of RL residuals addition 👆 ------------------------------------------------------------------------------------------------------------------------------------
+
 	if (do_update) {
 		_last_run = now;
 

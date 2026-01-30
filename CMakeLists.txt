@@ -449,6 +449,10 @@ foreach(module ${config_module_list})
 	add_subdirectory(src/${module})
 endforeach()
 
+# ---- custom residual test module ----
+add_subdirectory(src/modules/residual_test)
+
+
 # add events lib after modules and libs as it needs to know all source files (PX4_SRC_FILES)
 add_subdirectory(src/lib/events EXCLUDE_FROM_ALL)
 # metadata needs PX4_MODULE_CONFIG_FILES

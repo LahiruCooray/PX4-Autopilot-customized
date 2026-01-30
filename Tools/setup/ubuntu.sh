@@ -92,15 +92,22 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y --quiet --no-install-recommends i
 # Python3 dependencies
 echo
 echo "Installing PX4 Python3 dependencies"
-PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
-REQUIRED_VERSION="3.11"
-if [[ "$(printf '%s\n' "$REQUIRED_VERSION" "$PYTHON_VERSION" | sort -V | head -n1)" == "$REQUIRED_VERSION" ]]; then
-	python3 -m pip install --break-system-packages -r ${DIR}/requirements.txt
+
+# Check for virtual environment first (highest priority)
+if [ -n "$VIRTUAL_ENV" ]; then
+	echo "Virtual environment detected: $VIRTUAL_ENV"
+	# virtual environments don't allow --user option
+	python3 -m pip install -r ${DIR}/requirements.txt
 else
-	if [ -n "$VIRTUAL_ENV" ]; then
-		# virtual environments don't allow --user option
-		python -m pip install -r ${DIR}/requirements.txt
+	# Not in venv - check Python version for system install method
+	PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+	REQUIRED_VERSION="3.11"
+	if [[ "$(printf '%s\n' "$REQUIRED_VERSION" "$PYTHON_VERSION" | sort -V | head -n1)" == "$REQUIRED_VERSION" ]]; then
+		# Python >= 3.11 (e.g., Ubuntu 24.04 with Python 3.12)
+		# Use --break-system-packages for system-wide install
+		python3 -m pip install --break-system-packages -r ${DIR}/requirements.txt
 	else
+		# Python < 3.11 - use --user flag
 		python3 -m pip install --user -r ${DIR}/requirements.txt
 	fi
 fi
@@ -159,47 +166,57 @@ if [[ $INSTALL_SIM == "true" ]]; then
 	echo
 	echo "Installing PX4 simulation dependencies"
 
-	# General simulation dependencies
-	sudo DEBIAN_FRONTEND=noninteractive apt-get -y --quiet --no-install-recommends install \
-		bc \
-		;
+	# Check if Gazebo is already installed
+	SKIP_GAZEBO_INSTALL="false"
+	if command -v gz &> /dev/null; then
+		echo "Gazebo already installed ($(gz --version | head -n1)), skipping Gazebo installation..."
+		SKIP_GAZEBO_INSTALL="true"
+		gazebo_packages=""
+	elif command -v gzserver &> /dev/null; then
+		echo "Gazebo Classic already installed, skipping Gazebo installation..."
+		SKIP_GAZEBO_INSTALL="true"
+		gazebo_packages=""
+	fi
 
-	# Gazebo / Gazebo classic installation
-	if [[ "${UBUNTU_RELEASE}" == "18.04" || "${UBUNTU_RELEASE}" == "20.04" ]]; then
-		sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
-		wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
-		# Update list, since new gazebo-stable.list has been added
-		sudo apt-get update -y --quiet
+	# Gazebo / Gazebo classic installation (only if not already installed)
+	if [[ $SKIP_GAZEBO_INSTALL == "false" ]]; then
+		if [[ "${UBUNTU_RELEASE}" == "18.04" || "${UBUNTU_RELEASE}" == "20.04" ]]; then
+			sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
+			wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
+			# Update list, since new gazebo-stable.list has been added
+			sudo apt-get update -y --quiet
 
-		# Install Gazebo classic
-		if [[ "${UBUNTU_RELEASE}" == "18.04" ]]; then
-			gazebo_classic_version=9
-			gazebo_packages="gazebo$gazebo_classic_version libgazebo$gazebo_classic_version-dev"
+			# Install Gazebo classic
+			if [[ "${UBUNTU_RELEASE}" == "18.04" ]]; then
+				gazebo_classic_version=9
+				gazebo_packages="gazebo$gazebo_classic_version libgazebo$gazebo_classic_version-dev"
+			else
+				# default and Ubuntu 20.04
+				gazebo_classic_version=11
+				gazebo_packages="gazebo$gazebo_classic_version libgazebo$gazebo_classic_version-dev"
+			fi
 		else
-			# default and Ubuntu 20.04
-			gazebo_classic_version=11
-			gazebo_packages="gazebo$gazebo_classic_version libgazebo$gazebo_classic_version-dev"
-		fi
-	else
-		# Expects Ubuntu 22.04 > by default
-		echo "Gazebo (Harmonic) will be installed"
-		echo "Earlier versions will be removed"
-		# Add Gazebo binary repository
-		sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-		echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-		sudo apt-get update -y --quiet
+			# Expects Ubuntu 22.04 > by default
+			echo "Gazebo (Harmonic) will be installed"
+			echo "Earlier versions will be removed"
+			# Add Gazebo binary repository
+			sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+			echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+			sudo apt-get update -y --quiet
 
-		# Install Gazebo
-		gazebo_packages="gz-harmonic libunwind-dev"
+			# Install Gazebo
+			gazebo_packages="gz-harmonic libunwind-dev"
 
-		if [[ "${UBUNTU_RELEASE}" == "24.04" ]]; then
-			gazebo_packages="$gazebo_packages cppzmq-dev"
+			if [[ "${UBUNTU_RELEASE}" == "24.04" ]]; then
+				gazebo_packages="$gazebo_packages cppzmq-dev"
+			fi
 		fi
 	fi
 
+	# Install all simulation dependencies (with or without Gazebo)
 	sudo DEBIAN_FRONTEND=noninteractive apt-get -y --quiet --no-install-recommends install \
+		bc \
 		dmidecode \
-		$gazebo_packages \
 		gstreamer1.0-plugins-bad \
 		gstreamer1.0-plugins-base \
 		gstreamer1.0-plugins-good \
@@ -213,6 +230,20 @@ if [[ $INSTALL_SIM == "true" ]]; then
 		pkg-config \
 		protobuf-compiler \
 		;
+
+	# Install Gazebo packages if not already installed
+	if [[ -n "$gazebo_packages" ]]; then
+		sudo DEBIAN_FRONTEND=noninteractive apt-get -y --quiet --no-install-recommends install \
+			$gazebo_packages \
+			;
+	fi
+
+	# Install cppzmq-dev for Ubuntu 24.04 if not already installed
+	if [[ "${UBUNTU_RELEASE}" == "24.04" ]] && [[ $SKIP_GAZEBO_INSTALL == "true" ]]; then
+		sudo DEBIAN_FRONTEND=noninteractive apt-get -y --quiet --no-install-recommends install \
+			cppzmq-dev \
+			;
+	fi
 
 	if sudo dmidecode -t system | grep -q "Manufacturer: VMware, Inc." ; then
 		# fix VMWare 3D graphics acceleration for gazebo

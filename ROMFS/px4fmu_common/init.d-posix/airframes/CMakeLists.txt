@@ -33,6 +33,8 @@
 
 px4_add_romfs_files(
 
+    4022_gz_custom_hexa
+    4023_gz_custom_hexa_arm
 	1010_gazebo-classic_iris_opt_flow
 	1010_gazebo-classic_iris_opt_flow.post
 	1011_gazebo-classic_iris_irlock
@@ -92,6 +94,7 @@ px4_add_romfs_files(
 	4019_gz_x500_gimbal
 	4020_gz_tiltrotor
 	4021_gz_x500_flow
+
 
 	6011_gazebo-classic_typhoon_h480
 	6011_gazebo-classic_typhoon_h480.post

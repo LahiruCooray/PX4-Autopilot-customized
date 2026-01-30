@@ -1,0 +1,9 @@
+# In src/modules/Kconfig
+
+config MODULES_RESIDUAL_TEST
+	bool "residual_test module"
+	default n
+	help
+	  Simple test module that publishes residual torque/thrust
+	  on custom uORB topics for the control allocator.
+

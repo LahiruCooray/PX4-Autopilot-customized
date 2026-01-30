@@ -1,0 +1,101 @@
+===== REPLACE YOUR SENSOR SECTION (lines 56-126) WITH THIS =====
+
+REMOVE these lines from base_link (lines 56-126):
+      <!-- IMU Sensor at ~200 Hz -->
+      <sensor name="imu_sensor" type="imu">
+      ... (all the way through) ...
+      </sensor>
+
+ADD these PLUGINS at the MODEL level (after all the motor plugins, before </model>):
+
+    <!-- PX4 IMU Plugin -->
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+    
+    <!-- PX4 Barometer Plugin -->
+    <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure"/>
+    
+    <!-- PX4 Magnetometer Plugin -->
+    <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer">
+      <topic>/world/default/model/f550/link/base_link/sensor/magnetometer_sensor/magnetometer</topic>
+    </plugin>
+    
+    <!-- PX4 GPS Plugin -->
+    <plugin filename="gz-sim-navsat-system" name="gz::sim::systems::NavSat">
+      <topic>/world/default/model/f550/link/base_link/sensor/gps_sensor/navsat</topic>
+    </plugin>
+
+AND ADD magnetometer sensor to base_link (after the GPS sensor):
+
+      <!-- Magnetometer Sensor at ~100 Hz -->
+      <sensor name="magnetometer_sensor" type="magnetometer">
+        <pose>0 0 0.02 0 0 0</pose>
+        <always_on>true</always_on>
+        <update_rate>100</update_rate>
+        <magnetometer>
+          <x>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.01</stddev>
+            </noise>
+          </x>
+          <y>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.01</stddev>
+            </noise>
+          </y>
+          <z>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.01</stddev>
+            </noise>
+          </z>
+        </magnetometer>
+      </sensor>
+
+IMPORTANT: Your existing sensors at lines 56-126 are actually OK! The issue is simpler - you're missing the model-level sensor system plugin.
+
+I see you already have this at line ~1750:
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors"/>
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+    <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure"/>
+    <plugin filename="gz-sim-navsat-system" name="gz::sim::systems::NavSat"/>
+
+BUT these plugins need to be configured to match PX4's expectations!
+
+===== ACTUAL FIX NEEDED =====
+
+The real issue is that your sensors need proper topic configuration for PX4. 
+Here's what you need to change:
+
+1. Keep your existing sensors (IMU, barometer, GPS) in base_link - they're fine!
+
+2. MODIFY the model-level plugins at the end (around line 1750) to:
+
+    <!-- Sensors System (must be first) -->
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    
+    <!-- IMU System -->
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+    
+    <!-- Barometer System -->
+    <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure"/>
+    
+    <!-- GPS/NavSat System -->
+    <plugin filename="gz-sim-navsat-system" name="gz::sim::systems::NavSat"/>
+    
+    <!-- Add Magnetometer -->
+    <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer"/>
+
+3. ADD a magnetometer sensor to base_link (after your GPS sensor):
+
+      <!-- Magnetometer for compass -->
+      <sensor name="mag" type="magnetometer">
+        <pose>0 0 0.02 0 0 0</pose>
+        <always_on>true</always_on>
+        <update_rate>100</update_rate>
+      </sensor>
+
+That's it! The sensors themselves are fine, you just need the magnetometer added.

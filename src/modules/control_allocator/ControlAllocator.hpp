@@ -79,6 +79,10 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/failure_detector_status.h>
 
+#include <uORB/topics/vehicle_torque_residual.h>  // 👈 NEW
+#include <uORB/topics/vehicle_thrust_residual.h>  // 👈 NEW
+
+
 class ControlAllocator : public ModuleBase<ControlAllocator>, public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
@@ -179,6 +183,10 @@ private:
 
 	uORB::Subscription _vehicle_torque_setpoint1_sub{ORB_ID(vehicle_torque_setpoint), 1};  /**< vehicle torque setpoint subscription (2. instance) */
 	uORB::Subscription _vehicle_thrust_setpoint1_sub{ORB_ID(vehicle_thrust_setpoint), 1};	 /**< vehicle thrust setpoint subscription (2. instance) */
+	
+	// 👇 NEW: RL residual corrections (Δτ, ΔT)
+	uORB::Subscription _torque_resid_sub{ORB_ID(vehicle_torque_residual)};   /**< residual body torque from RL */
+	uORB::Subscription _thrust_resid_sub{ORB_ID(vehicle_thrust_residual)};   /**< residual body thrust from RL */
 
 	// Outputs
 	uORB::PublicationMulti<control_allocator_status_s> _control_allocator_status_pub[2] {ORB_ID(control_allocator_status), ORB_ID(control_allocator_status)};
@@ -195,6 +203,9 @@ private:
 
 	matrix::Vector3f _torque_sp;
 	matrix::Vector3f _thrust_sp;
+	// Stored residuals from RL controller (updated at ~146 Hz, applied every cycle at 250 Hz)
+	matrix::Vector3f _last_torque_residual{};
+	matrix::Vector3f _last_thrust_residual{};
 	bool _publish_controls{true};
 
 	// Reflects motor failures that are currently handled, not motor failures that are reported.
