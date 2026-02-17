@@ -206,6 +206,9 @@ private:
 	// Stored residuals from RL controller (updated at ~146 Hz, applied every cycle at 250 Hz)
 	matrix::Vector3f _last_torque_residual{};
 	matrix::Vector3f _last_thrust_residual{};
+	// Timestamps for residual timeout detection
+	hrt_abstime _last_torque_residual_time{0};
+	hrt_abstime _last_thrust_residual_time{0};
 	bool _publish_controls{true};
 
 	// Reflects motor failures that are currently handled, not motor failures that are reported.

@@ -413,13 +413,13 @@ ControlAllocator::Run()
 	// Safety: Reset residuals to zero if no messages received within timeout (200ms)
 	constexpr hrt_abstime RESIDUAL_TIMEOUT = 200_ms;
 	if (_last_torque_residual_time > 0 && (now - _last_torque_residual_time) > RESIDUAL_TIMEOUT) {
-		if (!_last_torque_residual.isAllZero()) {
+		if (_last_torque_residual.norm_squared() > 0.0f) {
 			_last_torque_residual.zero();
 			do_update = true;
 		}
 	}
 	if (_last_thrust_residual_time > 0 && (now - _last_thrust_residual_time) > RESIDUAL_TIMEOUT) {
-		if (!_last_thrust_residual.isAllZero()) {
+		if (_last_thrust_residual.norm_squared() > 0.0f) {
 			_last_thrust_residual.zero();
 			do_update = true;
 		}
