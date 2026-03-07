@@ -80,6 +80,12 @@ publications:
   - topic: /fmu/out/home_position
     type: px4_msgs::msg::HomePosition
 
+  - topic: /fmu/out/vehicle_thrust_setpoint
+    type: px4_msgs::msg::VehicleThrustSetpoint
+
+  - topic: /fmu/out/vehicle_torque_setpoint
+    type: px4_msgs::msg::VehicleTorqueSetpoint
+
 # Create uORB::Publication
 subscriptions:
   - topic: /fmu/in/register_ext_component_request
