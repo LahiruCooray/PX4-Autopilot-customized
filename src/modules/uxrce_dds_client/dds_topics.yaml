@@ -86,6 +86,12 @@ publications:
   - topic: /fmu/out/vehicle_torque_setpoint
     type: px4_msgs::msg::VehicleTorqueSetpoint
 
+<<<<<<< HEAD
+=======
+  - topic: /fmu/out/vehicle_rates_setpoint
+    type: px4_msgs::msg::VehicleRatesSetpoint
+
+>>>>>>> b6ef7b7 (added vehicle_rate_residual topic and modified mc_rate_control module)
 # Create uORB::Publication
 subscriptions:
   - topic: /fmu/in/register_ext_component_request
@@ -171,6 +177,9 @@ subscriptions:
     
   - topic: /fmu/in/vehicle_torque_residual
     type: px4_msgs::msg::VehicleTorqueResidual
+
+  - topic: /fmu/in/vehicle_rate_residual
+    type: px4_msgs::msg::VehicleRateResidual
 
   - topic: /fmu/in/vehicle_thrust_residual
     type: px4_msgs::msg::VehicleThrustResidual

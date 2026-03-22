@@ -185,6 +185,25 @@ MulticopterRateControl::Run()
 			}
 		}
 
+		// RL rate residual injection — applied before rate controller so it tracks the modified setpoint at 1000Hz
+		{
+			const hrt_abstime now_residual = hrt_absolute_time();
+			vehicle_rate_residual_s rate_resid{};
+
+			if (_rl_rate_residual_sub.update(&rate_resid)) {
+				_last_rate_residual = Vector3f(rate_resid.xyz);
+				_last_rate_residual_time = now_residual;
+
+			} else if (_last_rate_residual_time > 0 && (now_residual - _last_rate_residual_time) > 200_ms) {
+				// Safety: zero out residual if no message received within timeout
+				if (_last_rate_residual.norm_squared() > 0.0f) {
+					_last_rate_residual.zero();
+				}
+			}
+
+			_rates_setpoint += _last_rate_residual;
+		}
+
 		// run the rate controller
 		if (_vehicle_control_mode.flag_control_rates_enabled) {
 

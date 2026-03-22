@@ -39,6 +39,7 @@ include(px4_list_make_absolute)
 set(msg_files
     VehicleThrustResidual.msg
     VehicleTorqueResidual.msg
+    VehicleRateResidual.msg
 	AckermannVelocitySetpoint.msg
 	ActionRequest.msg
 	ActuatorArmed.msg

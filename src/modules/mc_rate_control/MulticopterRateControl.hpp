@@ -60,6 +60,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_thrust_setpoint.h>
 #include <uORB/topics/vehicle_torque_setpoint.h>
+#include <uORB/topics/vehicle_rate_residual.h>
 
 using namespace time_literals;
 
@@ -99,6 +100,7 @@ private:
 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 	uORB::Subscription _vehicle_rates_setpoint_sub{ORB_ID(vehicle_rates_setpoint)};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _rl_rate_residual_sub{ORB_ID(vehicle_rate_residual)};
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 
@@ -123,6 +125,8 @@ private:
 	// keep setpoint values between updates
 	matrix::Vector3f _acro_rate_max;		/**< max attitude rates in acro mode */
 	matrix::Vector3f _rates_setpoint{};
+	matrix::Vector3f _last_rate_residual{};
+	hrt_abstime      _last_rate_residual_time{0};
 
 	float _battery_status_scale{0.0f};
 	matrix::Vector3f _thrust_setpoint{};
